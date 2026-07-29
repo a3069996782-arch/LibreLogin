@@ -26,6 +26,9 @@ tasks.withType<JavaCompile> {
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
     withSourcesJar()
     withJavadocJar()
 }

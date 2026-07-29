@@ -56,18 +56,8 @@ import static xyz.kyngs.librelogin.paper.protocol.ProtocolUtil.getServerVersion;
 
 public class PaperListeners extends AuthenticListeners<PaperLibreLogin, Player, World> implements Listener {
 
-    private static final String ENCRYPTION_CLASS_NAME = "MinecraftEncryption";
-    private static final Class<?> ENCRYPTION_CLASS;
     private static Method encryptMethod;
-    private static Method cipherMethod;
-
-    static {
-        try {
-            ENCRYPTION_CLASS = Class.forName("net.minecraft.util." + ENCRYPTION_CLASS_NAME);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static boolean cipherEncryption;
 
     private final KeyPair keyPair = EncryptionUtil.generateKeyPair();
     private final Random random = new SecureRandom();
@@ -384,23 +374,20 @@ public class PaperListeners extends AuthenticListeners<PaperLibreLogin, Player, 
             if (encryptMethod == null) {
                 // Get the 1.16.4-1.21.0 encryption method
                 encryptMethod = Reflection.getMethod(networkManagerClass, "setEncryptionKey", Cipher.class, Cipher.class);
-
-                // Get the needed Cipher helper method (used to generate ciphers from login key)
-                cipherMethod = Reflection.getMethod(ENCRYPTION_CLASS, "a", int.class, Key.class);
+                cipherEncryption = encryptMethod != null;
             }
         }
 
         try {
             Object networkManager = ProtocolUtil.findNetworkManager(channel);
 
-            // If cipherMethod is null - use old encryption (pre MC 1.16.4), otherwise use the new cipher one
-            if (cipherMethod == null) {
+            if (!cipherEncryption) {
                 // Encrypt/decrypt packet flow, this behaviour is expected by the client
                 encryptMethod.invoke(networkManager, loginKey);
             } else {
                 // Create ciphers from login key
-                Object decryptionCipher = cipherMethod.invoke(null, Cipher.DECRYPT_MODE, loginKey);
-                Object encryptionCipher = cipherMethod.invoke(null, Cipher.ENCRYPT_MODE, loginKey);
+                Cipher decryptionCipher = EncryptionUtil.createNetworkCipher(Cipher.DECRYPT_MODE, loginKey);
+                Cipher encryptionCipher = EncryptionUtil.createNetworkCipher(Cipher.ENCRYPT_MODE, loginKey);
 
                 // Encrypt/decrypt packet flow, this behaviour is expected by the client
                 encryptMethod.invoke(networkManager, decryptionCipher, encryptionCipher);

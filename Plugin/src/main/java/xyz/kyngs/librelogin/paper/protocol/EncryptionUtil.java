@@ -25,6 +25,7 @@ import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -181,6 +182,14 @@ public final class EncryptionUtil {
         return cipher.doFinal(data);
     }
 
+    public static Cipher createNetworkCipher(int operationMode, Key key)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException {
+        Cipher cipher = Cipher.getInstance("AES/CFB8/NoPadding");
+        cipher.init(operationMode, key, new IvParameterSpec(key.getEncoded()));
+        return cipher;
+    }
+
     private static byte[] getServerIdHash(String sessionId, PublicKey publicKey, SecretKey sharedSecret) {
         @SuppressWarnings("deprecation")
         Hasher hasher = Hashing.sha1().newHasher();
@@ -192,4 +201,3 @@ public final class EncryptionUtil {
         return hasher.hash().asBytes();
     }
 }
-

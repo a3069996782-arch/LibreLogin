@@ -13,8 +13,6 @@ import java.util.Collections;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
-import com.velocitypowered.proxy.config.PlayerInfoForwarding;
-import com.velocitypowered.proxy.config.VelocityConfiguration;
 
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.server.LimboServer;
@@ -46,15 +44,27 @@ public class VelocityNanoLimboIntegration extends NanoLimboIntegration<Registere
 
     @Override
     protected InfoForwarding createForwarding() {
-        VelocityConfiguration velocityConfiguration = (VelocityConfiguration) proxyServer.getConfiguration();
-        PlayerInfoForwarding forwardingMode = velocityConfiguration.getPlayerInfoForwardingMode();
-        return switch (forwardingMode) {
-            case NONE -> FORWARDING_FACTORY.none();
-            case LEGACY -> FORWARDING_FACTORY.legacy();
-            case MODERN -> FORWARDING_FACTORY.modern(velocityConfiguration.getForwardingSecret());
-            case BUNGEEGUARD ->
-                    FORWARDING_FACTORY.bungeeGuard(Collections.singleton(new String(velocityConfiguration.getForwardingSecret(), StandardCharsets.UTF_8)));
-        };
+        Object velocityConfiguration = proxyServer.getConfiguration();
+
+        try {
+            Object forwardingMode = velocityConfiguration.getClass()
+                    .getMethod("getPlayerInfoForwardingMode")
+                    .invoke(velocityConfiguration);
+            byte[] forwardingSecret = (byte[]) velocityConfiguration.getClass()
+                    .getMethod("getForwardingSecret")
+                    .invoke(velocityConfiguration);
+
+            return switch (((Enum<?>) forwardingMode).name()) {
+                case "NONE" -> FORWARDING_FACTORY.none();
+                case "LEGACY" -> FORWARDING_FACTORY.legacy();
+                case "MODERN" -> FORWARDING_FACTORY.modern(forwardingSecret);
+                case "BUNGEEGUARD" ->
+                        FORWARDING_FACTORY.bungeeGuard(Collections.singleton(new String(forwardingSecret, StandardCharsets.UTF_8)));
+                default -> throw new IllegalStateException("Unsupported Velocity forwarding mode: " + forwardingMode);
+            };
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Cannot read Velocity forwarding configuration", exception);
+        }
     }
 
     @Override

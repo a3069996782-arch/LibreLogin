@@ -2,8 +2,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     id("java")
-    id("io.github.goooler.shadow") version "8.1.8"
-    id("net.kyori.blossom").version("1.3.1")
+    id("com.gradleup.shadow") version "8.3.11"
+    id("net.kyori.blossom").version("2.2.0")
     id("java-library")
     id("xyz.kyngs.libby.plugin").version("1.2.1")
     id("xyz.kyngs.mcupload.plugin").version("0.3.4")
@@ -21,6 +21,8 @@ mcupload {
             loaders = listOf("paper", "purpur", "bungeecord", "waterfall", "velocity")
             projectId = "tL0SCXYq"
             gameVersions = listOf(
+                "26.2", "26.1.2", "26.1.1", "26.1",
+                "1.21.11", "1.21.10", "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5",
                 "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21",
                 "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
                 "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
@@ -70,8 +72,14 @@ repositories {
     maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
 }
 
-blossom {
-    replaceToken("@version@", version)
+sourceSets {
+    main {
+        blossom {
+            javaSources {
+                property("version", project.version.toString())
+            }
+        }
+    }
 }
 
 tasks.withType<ShadowJar> {
@@ -102,7 +110,7 @@ tasks.withType<ShadowJar> {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
@@ -120,7 +128,9 @@ libby {
     noChecksumDependency("com.github.retrooper.packetevents:.*:.*")
 }
 
-configurations.all {
+configurations.configureEach {
+    if (name == "compileClasspath") return@configureEach
+
     // I hate this, but it needs to be done as bungeecord does not support newer versions of adventure, and packetevents includes it
     resolutionStrategy {
         force("net.kyori:adventure-text-minimessage:4.14.0")
@@ -138,9 +148,8 @@ dependencies {
     implementation(project(":API"))
 
     //Velocity
-    annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
-    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
-    compileOnly("com.velocitypowered:velocity-proxy:3.2.0-SNAPSHOT-277")
+    annotationProcessor("com.velocitypowered:velocity-api:4.1.0-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-api:4.1.0-SNAPSHOT")
 
     //MySQL
     libby("org.mariadb.jdbc:mariadb-java-client:3.5.1")
@@ -175,7 +184,7 @@ dependencies {
     compileOnly("net.luckperms:api:5.4")
 
     //Bungeecord
-    compileOnly("net.md-5:bungeecord-api:1.21-R0.1-SNAPSHOT")
+    compileOnly("net.md-5:bungeecord-api:26.1-R0.1-SNAPSHOT")
     compileOnly("com.github.ProxioDev.ValioBungee:RedisBungee-Bungee:0.12.5")
     libby("net.kyori:adventure-platform-bungeecord:4.1.2")
 
@@ -185,9 +194,9 @@ dependencies {
     libby("org.bstats:bstats-bukkit:3.0.2")
 
     //Paper
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:26.2.build.+")
     //compileOnly "com.comphenix.protocol:ProtocolLib:5.1.0"
-    libby("com.github.retrooper:packetevents-spigot:2.7.0")
+    libby("com.github.retrooper:packetevents-spigot:2.13.0")
     compileOnly("io.netty:netty-transport:4.1.108.Final")
     compileOnly("com.mojang:datafixerupper:5.0.28") //I hate this so much
     compileOnly("org.apache.logging.log4j:log4j-core:2.23.1")

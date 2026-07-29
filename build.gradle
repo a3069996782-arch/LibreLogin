@@ -1,5 +1,5 @@
 plugins {
-    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'net.minecraftforge.licenser' version '1.2.0'
 }
 
 defaultTasks 'updateLicenses', 'shadowJar'
@@ -10,7 +10,7 @@ subprojects {
     version = rootProject.version
     group = 'xyz.kyngs.librelogin'
 
-    apply plugin: 'org.cadixdev.licenser'
+    apply plugin: 'net.minecraftforge.licenser'
 
     repositories {
         mavenLocal()
